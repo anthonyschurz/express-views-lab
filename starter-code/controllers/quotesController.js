@@ -1,72 +1,93 @@
 var Quote = require('../models/Quote');
 
 
-// INDEX
-function getAll(request, response) {
-  Quote.find(function(error, quotes) {
-    if(error) response.json({message: 'Could not find any quote'});
-
-    response.json({quotes: quotes});
+// INDEX shows all quotes
+function getAll(req, res) {
+  Quote.find(function(err, quotes) {
+    if(err) res.json({message: 'Could not find any quote'});
+    // res.json({quotes: quotes});
+    res.render('./index', {quotes: quotes});
   });
 }
 
-// CREATE
-function createQuote(request, response) {
+// Display the NEW quote form
+function newQuote(req,res){
+  // console.log('newquote from new quote');
+  res.render('./quotes/new');
+}
+
+// CREATE is called after POSTING from the NEW quote form
+function createQuote(req, res) {
   console.log('in POST');
-  console.log('body:',request.body);
-  var quote = new Quote(request.body);
+  // console.log('body:',req.body);
+  var quote = new Quote({'text': req.body.text, 'author': req.body.author});
+  // console.log(quote);
 
-  quote.save(function(error) {
-    if(error) response.json({messsage: 'Could not ceate quote b/c:' + error});
-    console.log(quote);
-    response.json(quote);
+  quote.save(function(err) {
+    if(err) res.json({messsage: 'Could not ceate quote: ' + err});
+    // res.json(quote);
+    res.redirect("/quotes");
   });
 }
 
-// SHOW
-function getQuote(request, response) {
-  var id = request.params.id;
-
-  Quote.findById({_id: id}, function(error, quote) {
-    if(error) response.json({message: 'Could not find quote b/c:' + error});
-
-    response.json({quote: quote});
-  });
+// SHOW a single quote on edit.ejs
+function getQuote(req, res) {
+  var id = req.params.id;
+    if (id == "newquote"){
+      console.log("yes, it is a newquote");
+      res.render('newquote');
+    } else {
+    Quote.findById({_id: id}, function(err, quote) {
+      if(err) {
+        res.json({ message: 'Could not get quote: ' + id });
+      } else {
+        console.log(res.body);
+        // res.json({quote: quote});
+        res.render('./quotes/edit', {quote: quote});
+      }
+    });
+   }
 }
 
 // UPDATE
-function updateQuote(request, response) {
-  var id = request.params.id;
+function updateQuote(req, res) {
+  var id = req.params.id;
+  Quote.findById({_id: id}, function(err, quote) {
+    if(err) res.json({message: 'Could not update quote: ' + err});
 
-  Quote.findById({_id: id}, function(error, quote) {
-    if(error) response.json({message: 'Could not find quote b/c:' + error});
-
-    if(request.body.name) quote.name = request.body.name;
-    if(request.body.color) quote.color = request.body.color;
-
-    quote.save(function(error) {
-      if(error) response.json({messsage: 'Could not update quote b/c:' + error});
-
-      response.json({message: 'Quote successfully updated'});
+    if (req.body.text) {
+      quote.text = req.body.text;
+    }
+    if (req.body.author) {
+      quote.author = req.body.author;
+    }
+    console.log(quote);
+    quote.save(function(err) {
+      if(err) res.json({messsage: 'Could not save updated quote: ' + err});
+      // res.json({message: 'Quote successfully updated'});
+      res.redirect('/quotes');
     });
   });
 }
 
 // DELETE
-function removeQuote(request, response) {
-  var id = request.params.id;
+function removeQuote(req, res) {
+  var id = req.params.id;
+  console.log("hello from removeQuote");
 
-  Quote.remove({_id: id}, function(error) {
-    if(error) response.json({message: 'Could not delete quote b/c:' + error});
+  Quote.remove({_id: id}, function(err) {
+    if(err) res.json({message: 'Could not delete quote: ' + err});
 
-    response.json({message: 'Quote successfully deleted'});
+    // res.json({message: 'Quote successfully deleted'});
+    res.redirect('/quotes');
   });
 }
 
 module.exports = {
   getAll: getAll,
+  newQuote: newQuote,
   createQuote: createQuote,
   getQuote: getQuote,
   updateQuote: updateQuote,
   removeQuote: removeQuote
-}
+};
